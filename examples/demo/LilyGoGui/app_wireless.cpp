@@ -2,6 +2,7 @@
 #include "WiFi.h"
 #include "global_flags.h"
 #include "ui.h"
+#include "custom_kb_map.h"
 // #include <NimBLE/NimBLEDevice.h>
 // #include <string.h>
 
@@ -189,8 +190,9 @@ void app_wireless_load(lv_obj_t *cont) {
   lv_obj_align_to(btn, ta3, LV_ALIGN_OUT_RIGHT_MID, 10, 40);
   // lv_obj_add_event_cb(btn, connect_ble_event_cb, LV_EVENT_CLICKED, ta3);
 
-  wireless_param.kb = lv_keyboard_create(cont);
-  lv_obj_add_flag(wireless_param.kb, LV_OBJ_FLAG_HIDDEN);
+  // wireless_param.kb = lv_keyboard_create(cont);
+  // lv_keyboard_set_popovers(wireless_param.kb, true);
+  // lv_obj_add_flag(wireless_param.kb, LV_OBJ_FLAG_HIDDEN);
 
   lv_obj_add_event_cb(ta2, ta_event_cb, LV_EVENT_CLICKED, (void *)t2_label); 
 }
@@ -348,8 +350,34 @@ static void textarea_right_right_cd(lv_event_t *e)
       break;
     }
 }
+static void ta_kb_event_cb(lv_event_t *e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t *ta = lv_event_get_target(e);
+    lv_obj_t *kb = (lv_obj_t *)lv_event_get_user_data(e);
+    if (code == LV_EVENT_FOCUSED)
+    {
+        lv_keyboard_set_textarea(kb, ta);
+        lv_obj_clear_flag(kb, LV_OBJ_FLAG_HIDDEN);
+    }
+    else if (code == LV_EVENT_DEFOCUSED)
+    {
+        lv_keyboard_set_textarea(kb, NULL);
+        lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
+        
+    }
+    else if (code == LV_EVENT_READY)
+    {
+        const char * txt = lv_textarea_get_text(ta);
+        lv_textarea_set_text(ta2, txt);
+        lv_keyboard_set_textarea(kb, NULL);
+        lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_t* obj_parent = lv_obj_get_parent(ta);
+        lv_obj_del_delayed(obj_parent, 1);
+    }
+}
 
-void ta_event_textarea(void)
+void lv_wifi_pass_keyboard(void)
 {
     lv_obj_t * obj = lv_obj_create(lv_layer_top());
     lv_obj_set_size(obj, 240, 240);
@@ -358,42 +386,29 @@ void ta_event_textarea(void)
     lv_obj_set_style_border_width(obj, 0, 0);  
     lv_obj_set_style_pad_all(obj, 0, 0); 
 
-    lv_obj_t * ta = lv_textarea_create(obj);
-    lv_obj_set_size(ta, 200, 35);
-    lv_textarea_set_one_line(ta, true);
-    lv_obj_align(ta, LV_ALIGN_TOP_MID, 0, 30);
-    lv_obj_add_event_cb(ta, textarea_event_handler, LV_EVENT_READY, ta);
-    lv_obj_add_state(ta, LV_STATE_FOCUSED);
+    /*Create a keyboard to use it with an of the text areas*/
+    lv_obj_t *kb = lv_keyboard_create(obj);
+    lv_keyboard_set_popovers(kb, true);
+    lv_keyboard_set_map(kb, LV_KEYBOARD_MODE_TEXT_LOWER, custom_kb_map_lc, custom_kb_ctrl_lc_map);
+    lv_keyboard_set_map(kb, LV_KEYBOARD_MODE_TEXT_UPPER, custom_kb_map_uc, custom_kb_ctrl_uc_map);
+    lv_keyboard_set_map(kb, LV_KEYBOARD_MODE_SPECIAL, custom_kb_map_spec, custom_kb_ctrl_spec_map);
+    lv_keyboard_set_map(kb, LV_KEYBOARD_MODE_NUMBER, custom_kb_map_num, custom_kb_ctrl_num_map);
 
-    textarea_btnm = lv_btnmatrix_create(obj);
-    lv_obj_set_size(textarea_btnm, 200, 150);
-    lv_obj_align(textarea_btnm, LV_ALIGN_BOTTOM_MID, 0, -5);
-    lv_obj_set_style_bg_color(textarea_btnm, lv_color_hex(0x000000), 0);
-    lv_obj_set_style_border_opa(textarea_btnm, LV_OPA_TRANSP, LV_PART_MAIN);
-    lv_obj_add_event_cb(textarea_btnm, btnm_event_handler, LV_EVENT_VALUE_CHANGED, ta);
-    lv_obj_clear_flag(textarea_btnm, LV_OBJ_FLAG_CLICK_FOCUSABLE); 
-    lv_btnmatrix_set_map(textarea_btnm, btnm_map0);
+    /*Create a text area. The keyboard will write here*/
+    lv_obj_t *ta;
+    ta = lv_textarea_create(obj);
+    lv_obj_align(ta, LV_ALIGN_TOP_MID, 0, 20);
+    lv_obj_add_event_cb(ta, ta_kb_event_cb, LV_EVENT_ALL, kb);
+    lv_obj_set_size(ta, 200, 80);
+    const char * txt = lv_textarea_get_text(ta2);
+    lv_textarea_set_text(ta, txt);
 
-    lv_obj_t *right_btn = lv_btn_create(obj);
-    lv_obj_align_to(right_btn, textarea_btnm, LV_ALIGN_RIGHT_MID, 25, -10);
-    lv_obj_add_event_cb(right_btn, textarea_right_right_cd, LV_EVENT_CLICKED, (void *)2);
-    lv_obj_set_style_bg_opa(right_btn, LV_OPA_0, 0);
-    lv_obj_set_style_outline_color(right_btn, lv_color_white(), LV_STATE_FOCUS_KEY);
-    lv_obj_set_style_border_opa(right_btn, LV_OPA_100, LV_PART_MAIN);
-    lv_obj_set_size(right_btn, 33, 33);
-    lv_obj_t *right_text = lv_label_create(right_btn);
-    lv_obj_center(right_text);
-    lv_label_set_text(right_text, LV_SYMBOL_RIGHT);
+    lv_keyboard_set_textarea(kb, ta);
+}
 
-    lv_obj_t *left_btn = lv_btn_create(obj);
-    lv_obj_align_to(left_btn, textarea_btnm, LV_ALIGN_LEFT_MID, -35, -10);
-    lv_obj_add_event_cb(left_btn, textarea_right_right_cd, LV_EVENT_CLICKED, (void *)1);
-    lv_obj_set_style_bg_opa(left_btn, LV_OPA_0, 0);
-    lv_obj_set_style_outline_color(left_btn, lv_color_white(), LV_STATE_FOCUS_KEY);
-    lv_obj_set_size(left_btn, 33, 33);
-    lv_obj_t *left_text = lv_label_create(left_btn);
-    lv_obj_center(left_text);
-    lv_label_set_text(left_text, LV_SYMBOL_LEFT);
+void ta_event_textarea(void)
+{
+    lv_wifi_pass_keyboard();
 }
 
 static void ta_event_cb(lv_event_t *e) {
