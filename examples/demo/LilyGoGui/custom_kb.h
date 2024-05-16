@@ -97,8 +97,13 @@ static void kb_event_value_change(lv_event_t *e)
     if ((code == LV_EVENT_PRESSED) || (code == LV_EVENT_PRESSING) || (code == LV_EVENT_LONG_PRESSED_REPEAT))
     {
         lv_obj_clear_flag(ta_zoomed, LV_OBJ_FLAG_HIDDEN);
-        const char * txt = lv_btnmatrix_get_btn_text(kb, lv_btnmatrix_get_selected_btn(kb));
-        lv_textarea_set_text(ta_zoomed, txt);
+        uint16_t btn = lv_btnmatrix_get_selected_btn(kb);
+        if (btn != LV_BTNMATRIX_BTN_NONE)
+        {
+            const char * txt = lv_btnmatrix_get_btn_text(kb, btn);
+            lv_textarea_set_text(ta_zoomed, txt);
+        }
+        
     }
     else if (code == LV_EVENT_RELEASED)
     {   
@@ -119,7 +124,7 @@ void lv_custom_kb_create(lv_event_t *e)
     /*Create a keyboard to use it with an of the text areas*/
     lv_obj_t *kb = lv_keyboard_create(obj);
     lv_obj_add_event_cb(kb, kb_event_value_change, LV_EVENT_ALL, NULL);
-    
+    lv_obj_clear_flag(kb, LV_OBJ_FLAG_CLICK_FOCUSABLE);
     lv_keyboard_set_popovers(kb, true);
     lv_keyboard_set_map(kb, LV_KEYBOARD_MODE_TEXT_LOWER, custom_kb_map_lc, custom_kb_ctrl_lc_map);
     lv_keyboard_set_map(kb, LV_KEYBOARD_MODE_TEXT_UPPER, custom_kb_map_uc, custom_kb_ctrl_uc_map);
