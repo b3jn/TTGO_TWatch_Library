@@ -7,6 +7,7 @@
 // #include <string.h>
 
 static lv_obj_t *ta2 = NULL;
+static lv_obj_t *ta_zoomed = NULL;
 
 static const char * btnm_map0[] = {"1", "2", "3", "\n",
                             "4", "5", "6", "\n",
@@ -377,6 +378,22 @@ static void ta_kb_event_cb(lv_event_t *e)
     }
 }
 
+static void kb_event_value_change(lv_event_t *e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t *kb = lv_event_get_target(e);
+    if ((code == LV_EVENT_PRESSED) || (code == LV_EVENT_PRESSING) || (code == LV_EVENT_LONG_PRESSED_REPEAT))
+    {
+        lv_obj_clear_flag(ta_zoomed, LV_OBJ_FLAG_HIDDEN);
+        const char * txt = lv_btnmatrix_get_btn_text(kb, lv_btnmatrix_get_selected_btn(kb));
+        lv_textarea_set_text(ta_zoomed, txt);
+    }
+    else if (code == LV_EVENT_RELEASED)
+    {   
+        lv_obj_add_flag(ta_zoomed, LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
 void lv_wifi_pass_keyboard(void)
 {
     lv_obj_t * obj = lv_obj_create(lv_layer_top());
@@ -388,6 +405,8 @@ void lv_wifi_pass_keyboard(void)
 
     /*Create a keyboard to use it with an of the text areas*/
     lv_obj_t *kb = lv_keyboard_create(obj);
+    lv_obj_add_event_cb(kb, kb_event_value_change, LV_EVENT_ALL, NULL);
+    
     lv_keyboard_set_popovers(kb, true);
     lv_keyboard_set_map(kb, LV_KEYBOARD_MODE_TEXT_LOWER, custom_kb_map_lc, custom_kb_ctrl_lc_map);
     lv_keyboard_set_map(kb, LV_KEYBOARD_MODE_TEXT_UPPER, custom_kb_map_uc, custom_kb_ctrl_uc_map);
@@ -397,9 +416,29 @@ void lv_wifi_pass_keyboard(void)
     /*Create a text area. The keyboard will write here*/
     lv_obj_t *ta;
     ta = lv_textarea_create(obj);
-    lv_obj_align(ta, LV_ALIGN_TOP_MID, 0, 20);
+    lv_obj_align(ta, LV_ALIGN_TOP_MID, 0, 5);
     lv_obj_add_event_cb(ta, ta_kb_event_cb, LV_EVENT_ALL, kb);
-    lv_obj_set_size(ta, 200, 80);
+    lv_obj_set_size(ta, 200, 50);
+    static lv_style_t style1;
+    lv_style_init(&style1);
+    lv_style_set_text_font(&style1, &lv_font_montserrat_14);
+    lv_obj_add_style(ta, &style1, 0);
+
+
+    /* ta zoomed */
+    ta_zoomed = lv_textarea_create(obj);
+    lv_obj_add_flag(ta_zoomed, LV_OBJ_FLAG_HIDDEN);
+    lv_textarea_set_one_line(ta_zoomed, true);
+    lv_obj_align(ta_zoomed, LV_ALIGN_TOP_MID, 0, 65);
+    lv_obj_add_event_cb(ta_zoomed, ta_kb_event_cb, LV_EVENT_ALL, kb);
+    lv_obj_set_size(ta_zoomed, 50, 50);
+
+    static lv_style_t style2;
+    lv_style_init(&style2);
+     lv_style_set_text_align(&style2, LV_TEXT_ALIGN_CENTER);
+    lv_style_set_text_font(&style2, &lv_font_montserrat_24);
+    lv_obj_add_style(ta_zoomed, &style2, 0);
+
     const char * txt = lv_textarea_get_text(ta2);
     lv_textarea_set_text(ta, txt);
 
