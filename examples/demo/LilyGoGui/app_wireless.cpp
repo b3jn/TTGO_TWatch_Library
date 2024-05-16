@@ -2,12 +2,11 @@
 #include "WiFi.h"
 #include "global_flags.h"
 #include "ui.h"
-#include "custom_kb_map.h"
+#include "custom_kb.h"
 // #include <NimBLE/NimBLEDevice.h>
 // #include <string.h>
 
 static lv_obj_t *ta2 = NULL;
-static lv_obj_t *ta_zoomed = NULL;
 
 static const char * btnm_map0[] = {"1", "2", "3", "\n",
                             "4", "5", "6", "\n",
@@ -351,108 +350,11 @@ static void textarea_right_right_cd(lv_event_t *e)
       break;
     }
 }
-static void ta_kb_event_cb(lv_event_t *e)
-{
-    lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t *ta = lv_event_get_target(e);
-    lv_obj_t *kb = (lv_obj_t *)lv_event_get_user_data(e);
-    if (code == LV_EVENT_FOCUSED)
-    {
-        lv_keyboard_set_textarea(kb, ta);
-        lv_obj_clear_flag(kb, LV_OBJ_FLAG_HIDDEN);
-    }
-    else if (code == LV_EVENT_DEFOCUSED)
-    {
-        lv_keyboard_set_textarea(kb, NULL);
-        lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
-        
-    }
-    else if (code == LV_EVENT_READY)
-    {
-        const char * txt = lv_textarea_get_text(ta);
-        lv_textarea_set_text(ta2, txt);
-        lv_keyboard_set_textarea(kb, NULL);
-        lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_t* obj_parent = lv_obj_get_parent(ta);
-        lv_obj_del_delayed(obj_parent, 1);
-    }
-}
 
-static void kb_event_value_change(lv_event_t *e)
-{
-    lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t *kb = lv_event_get_target(e);
-    if ((code == LV_EVENT_PRESSED) || (code == LV_EVENT_PRESSING) || (code == LV_EVENT_LONG_PRESSED_REPEAT))
-    {
-        lv_obj_clear_flag(ta_zoomed, LV_OBJ_FLAG_HIDDEN);
-        const char * txt = lv_btnmatrix_get_btn_text(kb, lv_btnmatrix_get_selected_btn(kb));
-        lv_textarea_set_text(ta_zoomed, txt);
-    }
-    else if (code == LV_EVENT_RELEASED)
-    {   
-        lv_obj_add_flag(ta_zoomed, LV_OBJ_FLAG_HIDDEN);
-    }
-}
-
-void lv_wifi_pass_keyboard(void)
-{
-    lv_obj_t * obj = lv_obj_create(lv_layer_top());
-    lv_obj_set_size(obj, 240, 240);
-    lv_obj_align(obj, LV_ALIGN_CENTER, 0, 0);
-    lv_obj_set_style_bg_color(obj, lv_color_hex(0x000000), 0);
-    lv_obj_set_style_border_width(obj, 0, 0);  
-    lv_obj_set_style_pad_all(obj, 0, 0); 
-
-    /*Create a keyboard to use it with an of the text areas*/
-    lv_obj_t *kb = lv_keyboard_create(obj);
-    lv_obj_add_event_cb(kb, kb_event_value_change, LV_EVENT_ALL, NULL);
-    
-    lv_keyboard_set_popovers(kb, true);
-    lv_keyboard_set_map(kb, LV_KEYBOARD_MODE_TEXT_LOWER, custom_kb_map_lc, custom_kb_ctrl_lc_map);
-    lv_keyboard_set_map(kb, LV_KEYBOARD_MODE_TEXT_UPPER, custom_kb_map_uc, custom_kb_ctrl_uc_map);
-    lv_keyboard_set_map(kb, LV_KEYBOARD_MODE_SPECIAL, custom_kb_map_spec, custom_kb_ctrl_spec_map);
-    lv_keyboard_set_map(kb, LV_KEYBOARD_MODE_NUMBER, custom_kb_map_num, custom_kb_ctrl_num_map);
-
-    /*Create a text area. The keyboard will write here*/
-    lv_obj_t *ta;
-    ta = lv_textarea_create(obj);
-    lv_obj_align(ta, LV_ALIGN_TOP_MID, 0, 5);
-    lv_obj_add_event_cb(ta, ta_kb_event_cb, LV_EVENT_ALL, kb);
-    lv_obj_set_size(ta, 200, 50);
-    static lv_style_t style1;
-    lv_style_init(&style1);
-    lv_style_set_text_font(&style1, &lv_font_montserrat_14);
-    lv_obj_add_style(ta, &style1, 0);
-
-
-    /* ta zoomed */
-    ta_zoomed = lv_textarea_create(obj);
-    lv_obj_add_flag(ta_zoomed, LV_OBJ_FLAG_HIDDEN);
-    lv_textarea_set_one_line(ta_zoomed, true);
-    lv_obj_align(ta_zoomed, LV_ALIGN_TOP_MID, 0, 65);
-    lv_obj_add_event_cb(ta_zoomed, ta_kb_event_cb, LV_EVENT_ALL, kb);
-    lv_obj_set_size(ta_zoomed, 50, 50);
-
-    static lv_style_t style2;
-    lv_style_init(&style2);
-     lv_style_set_text_align(&style2, LV_TEXT_ALIGN_CENTER);
-    lv_style_set_text_font(&style2, &lv_font_montserrat_24);
-    lv_obj_add_style(ta_zoomed, &style2, 0);
-
-    const char * txt = lv_textarea_get_text(ta2);
-    lv_textarea_set_text(ta, txt);
-
-    lv_keyboard_set_textarea(kb, ta);
-}
-
-void ta_event_textarea(void)
-{
-    lv_wifi_pass_keyboard();
-}
 
 static void ta_event_cb(lv_event_t *e) {
   my_print("\nta_event_cb\n");
-  ta_event_textarea();
+  lv_custom_kb_create(e);
 }
 
 /** Callback to process the results of the last scan or restart it */
