@@ -103,6 +103,10 @@ static void kb_event_value_change(lv_event_t *e)
             const char * txt = lv_btnmatrix_get_btn_text(kb, btn);
             lv_textarea_set_text(ta_zoomed, txt);
         }
+        else
+        {
+            lv_obj_add_flag(ta_zoomed, LV_OBJ_FLAG_HIDDEN);
+        }
         
     }
     else if (code == LV_EVENT_RELEASED)
