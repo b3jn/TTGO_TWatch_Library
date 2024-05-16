@@ -144,7 +144,7 @@ void lv_custom_kb_create(lv_event_t *e)
     lv_textarea_set_one_line(ta_zoomed, true);
     lv_obj_align(ta_zoomed, LV_ALIGN_TOP_MID, 0, 65);
     lv_obj_add_event_cb(ta_zoomed, ta_kb_event_cb, LV_EVENT_ALL, kb);
-    lv_obj_set_size(ta_zoomed, 50, 50);
+    lv_obj_set_size(ta_zoomed, 80, 50);
 
     static lv_style_t style2;
     lv_style_init(&style2);
