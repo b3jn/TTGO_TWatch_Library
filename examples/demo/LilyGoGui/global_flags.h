@@ -24,6 +24,7 @@
 /*******************app msg**********************/
 
 #define MSG_MENU_NAME_CHANGED    100
+#define MSG_MENU_SCROLLED        101
 
 #define MSG_LABEL_PARAM_CHANGE_1 200
 #define MSG_LABEL_PARAM_CHANGE_2 201

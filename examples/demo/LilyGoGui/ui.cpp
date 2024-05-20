@@ -60,16 +60,23 @@ static void create_app(lv_obj_t *parent,const char *name, const lv_img_dsc_t *im
     lv_obj_center(icon);
   }
   /* Text change event callback */
+  lv_msg_subsribe_obj(MSG_MENU_SCROLLED, btn, NULL);
+
   lv_obj_add_event_cb(
       btn,
       [](lv_event_t *e) {
+        lv_obj_t* btn = lv_event_get_target(e);
         lv_event_code_t c = lv_event_get_code(e);
-        char *text = (char *)lv_event_get_user_data(e);
-        if (c == LV_EVENT_FOCUSED) {
+        lv_obj_update_layout(btn);
+        lv_area_t btn_a;
+        lv_obj_get_coords(btn, &btn_a);
+
+        if ((c == LV_EVENT_MSG_RECEIVED) && (btn_a.x1 > 20) && (btn_a.x2 < 220)) {
+          char *text = (char *)lv_event_get_user_data(e);
           lv_msg_send(MSG_MENU_NAME_CHANGED, text);
         }
       },
-      LV_EVENT_FOCUSED, (void*)name);
+      LV_EVENT_MSG_RECEIVED, (void*)name);
   /* Click to select event callback */
   lv_obj_add_event_cb(
       btn,
@@ -136,6 +143,13 @@ void style_init() {
   lv_style_set_bg_color(&style_frameless, lv_color_white());
 }
 
+
+void menu_panel_scroll_cb(lv_event_t *e)
+{
+  lv_msg_send(MSG_MENU_SCROLLED, NULL);
+}
+
+
 void ui_init(void) {
   menu_g = lv_group_create();
   app_g = lv_group_create();
@@ -166,6 +180,7 @@ void ui_init(void) {
   lv_obj_set_flex_flow(panel, LV_FLEX_FLOW_ROW);
   lv_obj_align(panel, LV_ALIGN_TOP_MID, 0, 10);
   lv_obj_add_style(panel, &style_frameless, 0);
+  lv_obj_add_event_cb(panel, menu_panel_scroll_cb, LV_EVENT_SCROLL, NULL);
 
   /* Add application */
   create_app(panel, "Return", &home_img80, &app_return);
