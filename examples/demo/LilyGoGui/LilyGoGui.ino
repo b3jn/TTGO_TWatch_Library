@@ -470,7 +470,9 @@ void setup()
     //     printLocalTime();
     // }
 
-    setupGUI();
+    // setupGUI();
+    ui_init();
+
     // if (wifi_test_obj != NULL)
     //     lv_obj_del_delayed(wifi_test_obj, 1);
 

@@ -8,7 +8,7 @@
 #include "app_step_counter.h"
 #include "app_batt_voltage.h"
 #include "app_radio.h"
-
+#include "LilyGoLib.h"
 
 LV_FONT_DECLARE(alibaba_font);
 LV_IMG_DECLARE(lilygo2_gif);
@@ -26,6 +26,22 @@ LV_IMG_DECLARE(img_step_counter);
 LV_IMG_DECLARE(radio_img);
 LV_IMG_DECLARE(img_radio);
 
+
+LV_IMG_DECLARE(clock_face);
+LV_IMG_DECLARE(clock_hour_hand);
+LV_IMG_DECLARE(clock_minute_hand);
+LV_IMG_DECLARE(clock_second_hand);
+
+static lv_obj_t *hour_img;
+static lv_obj_t *min_img;
+static lv_obj_t *sec_img;
+static lv_obj_t *battery_percent;
+static lv_obj_t *weather_celsius;
+static lv_obj_t *step_counter;
+static lv_timer_t *clockTimer;
+
+// Save pedometer steps
+static uint32_t stepCounter = 0;
 
 static lv_style_t style_frameless;
 static lv_obj_t *main_screen;
@@ -45,6 +61,119 @@ extern lv_obj_t * step_counter_label;
 extern lv_obj_t * batt_voltage_label;
 extern lv_timer_t *transmitTask;
 extern void suspend_vadTaskHandler(void);
+
+
+void analogclock(lv_obj_t *parent)
+{
+    bool antialias = true;
+    lv_img_header_t header;
+
+    //String clock_filename = LV_FS_POSIX_LETTER + String(":/") + "clock_face.jpg";
+
+    const void *clock_filename = &clock_face;
+    const void *hour_filename = &clock_hour_hand;
+    const void *min_filename = &clock_minute_hand;
+    const void *sec_filename = &clock_second_hand;
+
+    lv_obj_t *clock_bg =  lv_img_create(parent);
+    lv_img_set_src(clock_bg, clock_filename);
+    lv_obj_set_size(clock_bg, 240, 240);
+    lv_obj_center(clock_bg);
+
+
+    hour_img = lv_img_create(parent);
+    lv_img_decoder_get_info(hour_filename, &header);
+    lv_img_set_src(hour_img, hour_filename);
+    lv_obj_center(hour_img);
+    lv_img_set_pivot(hour_img, header.w / 2, header.h / 2);
+    lv_img_set_antialias(hour_img, antialias);
+
+    lv_img_decoder_get_info(min_filename, &header);
+    min_img = lv_img_create(parent);
+    lv_img_set_src(min_img,  min_filename);
+    lv_obj_center(min_img);
+    lv_img_set_pivot(min_img, header.w / 2, header.h / 2);
+    lv_img_set_antialias(min_img, antialias);
+
+    lv_img_decoder_get_info(sec_filename, &header);
+    sec_img = lv_img_create(parent);
+    lv_img_set_src(sec_img,  sec_filename);
+    lv_obj_center(sec_img);
+    lv_img_set_pivot(sec_img, header.w / 2, header.h / 2);
+    lv_img_set_antialias(sec_img, antialias);
+
+    static lv_style_t label_style;
+    lv_style_init(&label_style);
+    lv_style_set_text_color(&label_style, lv_color_white());
+
+    battery_percent = lv_label_create(parent);
+    lv_label_set_text(battery_percent, "100");
+    lv_obj_align(battery_percent, LV_ALIGN_LEFT_MID, 68, -10);
+    lv_obj_add_style(battery_percent, &label_style, LV_PART_MAIN);
+
+    weather_celsius = lv_label_create(parent);
+    lv_label_set_text(weather_celsius, "23°C");
+    lv_obj_align(weather_celsius, LV_ALIGN_RIGHT_MID, -62, -2);
+    lv_obj_add_style(weather_celsius, &label_style, LV_PART_MAIN);
+
+    step_counter = lv_label_create(parent);
+    lv_label_set_text(step_counter, "6688");
+    lv_obj_align(step_counter, LV_ALIGN_BOTTOM_MID, 0, -55);
+    lv_obj_add_style(step_counter, &label_style, LV_PART_MAIN);
+
+    clockTimer =   lv_timer_create([](lv_timer_t *timer) {
+
+        time_t now;
+        struct tm  timeinfo;
+        time(&now);
+        localtime_r(&now, &timeinfo);
+
+        lv_img_set_angle(
+            hour_img, ((timeinfo.tm_hour) * 300 + ((timeinfo.tm_min) * 5)) % 3600);
+        lv_img_set_angle(min_img, (timeinfo.tm_min) * 60);
+
+        lv_anim_t a;
+        lv_anim_init(&a);
+        lv_anim_set_var(&a, sec_img);
+        lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)lv_img_set_angle);
+        lv_anim_set_values(&a, (timeinfo.tm_sec * 60) % 3600,
+                           (timeinfo.tm_sec + 1) * 60);
+        lv_anim_set_time(&a, 1000);
+        lv_anim_start(&a);
+
+        // Update step counter
+        lv_label_set_text_fmt(step_counter, "%u", stepCounter);
+
+        // Update battery percent
+        int percent = watch.getBatteryPercent();
+        lv_label_set_text_fmt(battery_percent, "%d", percent == -1 ? 0 : percent);
+
+        // float  temp = watch.readBmaTemp();
+        // Serial.print(temp);
+        // Serial.println("*C");
+        // lv_label_set_text_fmt(weather_celsius, "%d°C", (int)temp);
+
+    },
+    1000, NULL);
+}
+
+static void watch_ifs_create(lv_obj_t *parent)
+{
+  static lv_style_t bgStyle;
+  lv_style_init(&bgStyle);
+  lv_style_set_bg_color(&bgStyle, lv_color_black());
+
+  lv_obj_t *tileview = lv_tileview_create(parent);
+  lv_obj_add_style(tileview, &bgStyle, LV_PART_MAIN);
+  lv_obj_set_size(tileview, lv_disp_get_hor_res(NULL), lv_disp_get_ver_res(NULL));
+  
+  lv_obj_t *t2 = lv_tileview_add_tile(tileview, 0, 0, LV_DIR_HOR);
+
+  analogclock(t2);
+
+}
+
+
 
 static void create_app(lv_obj_t *parent,const char *name, const lv_img_dsc_t *img, app_t *app_fun) {
   /* Create an interactive button named after the app. */
@@ -84,7 +213,7 @@ static void create_app(lv_obj_t *parent,const char *name, const lv_img_dsc_t *im
         lv_event_code_t c = lv_event_get_code(e);
         app_t *func_cb = (app_t *)lv_event_get_user_data(e);
 
-        lv_obj_t *parent = lv_obj_get_child(main_screen, 1);
+        lv_obj_t *parent = lv_obj_get_child(main_screen, 2);
         if (c == LV_EVENT_CLICKED) {
           lv_group_set_default(app_g);
           lv_indev_set_group(indev, app_g);
@@ -113,7 +242,7 @@ static void create_app(lv_obj_t *parent,const char *name, const lv_img_dsc_t *im
                 lv_group_set_default(menu_g);
                 lv_indev_set_group(indev, menu_g);
                 lv_obj_clean(parent);
-                lv_obj_set_tile_id(main_screen, 0, 0, LV_ANIM_ON);
+                lv_obj_set_tile_id(main_screen, 0, 1, LV_ANIM_ON);
                 if(chart != NULL)
                 {
                     chart = NULL;
@@ -130,7 +259,7 @@ static void create_app(lv_obj_t *parent,const char *name, const lv_img_dsc_t *im
               },
               LV_EVENT_CLICKED, func_cb);
 
-          lv_obj_set_tile_id(main_screen, 0, 1, LV_ANIM_ON);
+          lv_obj_set_tile_id(main_screen, 0, 2, LV_ANIM_ON);
         }
       },
       LV_EVENT_CLICKED, app_fun);
@@ -165,13 +294,15 @@ void ui_init(void) {
   lv_obj_set_style_bg_color(main_screen, lv_color_hex(0x000000), LV_PART_MAIN);
 
   /* Create two views for switching menus and app UI */
-  lv_obj_t *menu_panel = lv_tileview_add_tile(main_screen, 0, 0, LV_DIR_HOR);
+  lv_obj_t *watch_panel = lv_tileview_add_tile(main_screen, 0, 0, LV_DIR_BOTTOM);
+  watch_ifs_create(watch_panel);
+  lv_obj_t *menu_panel = lv_tileview_add_tile(main_screen, 0, 1, LV_DIR_TOP);
   lv_obj_set_style_bg_color(menu_panel, lv_color_hex(0xffffff), LV_PART_MAIN);
-  lv_obj_t *app_panel = lv_tileview_add_tile(main_screen, 0, 1, LV_DIR_HOR);
+  lv_obj_t *app_panel = lv_tileview_add_tile(main_screen, 0, 2, LV_DIR_HOR);
   if(app_panel == NULL)
     return;
 
-  lv_obj_clear_flag(menu_panel, LV_OBJ_FLAG_SCROLLABLE);
+  // lv_obj_clear_flag(menu_panel, LV_OBJ_FLAG_SCROLLABLE);
 
   /* Initialize the menu view */
   lv_obj_t *panel = lv_obj_create(menu_panel);
@@ -183,7 +314,6 @@ void ui_init(void) {
   lv_obj_add_event_cb(panel, menu_panel_scroll_cb, LV_EVENT_SCROLL, NULL);
 
   /* Add application */
-  create_app(panel, "Return", &home_img80, &app_return);
   create_app(panel, "Calendar", &calendar_img80, &app_calendar);
   create_app(panel, "Wireless", &img_wifi, &app_wireless);
   create_app(panel, "Music", &img_music, &app_music);
