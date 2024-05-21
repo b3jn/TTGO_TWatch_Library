@@ -32,6 +32,22 @@ LV_IMG_DECLARE(clock_hour_hand);
 LV_IMG_DECLARE(clock_minute_hand);
 LV_IMG_DECLARE(clock_second_hand);
 
+LV_IMG_DECLARE(watch_if);
+LV_IMG_DECLARE(watch_bg);
+LV_IMG_DECLARE(watch_if_hour);
+LV_IMG_DECLARE(watch_if_min);
+LV_IMG_DECLARE(watch_if_sec);
+
+LV_IMG_DECLARE(watch_if_bg2);
+LV_IMG_DECLARE(watch_if_hour2);
+LV_IMG_DECLARE(watch_if_min2);
+LV_IMG_DECLARE(watch_if_sec2);
+
+LV_IMG_DECLARE(watch_if_5);
+LV_IMG_DECLARE(watch_if_6);
+LV_IMG_DECLARE(watch_if_8);
+LV_FONT_DECLARE(font_firacode_60);
+
 static lv_obj_t *hour_img;
 static lv_obj_t *min_img;
 static lv_obj_t *sec_img;
@@ -39,7 +55,7 @@ static lv_obj_t *battery_percent;
 static lv_obj_t *weather_celsius;
 static lv_obj_t *step_counter;
 static lv_timer_t *clockTimer;
-
+static lv_obj_t *label_datetime;
 // Save pedometer steps
 static uint32_t stepCounter = 0;
 
@@ -156,7 +172,169 @@ void analogclock(lv_obj_t *parent)
     },
     1000, NULL);
 }
+lv_obj_t *watch_if_hh_img;
+lv_obj_t *watch_if_mm_img;
+lv_obj_t *watch_if_ss_img;
 
+void analogclock2(lv_obj_t *parent)
+{
+    bool antialias = true;
+    lv_img_header_t header;
+
+    /* Reading image from file */
+    String clock_f = LV_FS_POSIX_LETTER + String(":/") + String("ttgo.jpg");
+    const void *clock_filename = &clock_f;
+
+    /* reading image from raw C file*/
+    // const void *clock_filename = &watch_if;
+    const void *hour_filename = &watch_if_hour;
+    const void *min_filename = &watch_if_min;
+    const void *sec_filename = &watch_if_sec;
+
+
+    lv_obj_t *clock_bg =  lv_img_create(parent);
+    lv_img_set_src(clock_bg, &watch_bg);
+    lv_obj_set_size(clock_bg, 240, 240);
+    lv_obj_center(clock_bg);
+
+    lv_obj_t *clock_if =  lv_img_create(parent);
+    lv_img_set_src(clock_if, clock_filename);
+    lv_obj_set_size(clock_if, 240, 240);
+    lv_obj_center(clock_if);
+
+
+    watch_if_hh_img = lv_img_create(parent);
+    lv_img_decoder_get_info(hour_filename, &header);
+    lv_img_set_src(watch_if_hh_img, hour_filename);
+    lv_obj_center(watch_if_hh_img);
+    lv_img_set_pivot(watch_if_hh_img, header.w / 2, header.h / 2);
+    lv_img_set_antialias(watch_if_hh_img, antialias);
+
+    lv_img_decoder_get_info(min_filename, &header);
+    watch_if_mm_img = lv_img_create(parent);
+    lv_img_set_src(watch_if_mm_img,  min_filename);
+    lv_obj_center(watch_if_mm_img);
+    lv_img_set_pivot(watch_if_mm_img, header.w / 2, header.h / 2);
+    lv_img_set_antialias(watch_if_mm_img, antialias);
+
+    lv_img_decoder_get_info(sec_filename, &header);
+    watch_if_ss_img = lv_img_create(parent);
+    lv_img_set_src(watch_if_ss_img,  sec_filename);
+    lv_obj_center(watch_if_ss_img);
+    lv_img_set_pivot(watch_if_ss_img, header.w / 2, header.h / 2);
+    lv_img_set_antialias(watch_if_ss_img, antialias);
+
+    lv_timer_create([](lv_timer_t *timer) {
+
+        time_t now;
+        struct tm  timeinfo;
+        time(&now);
+        localtime_r(&now, &timeinfo);
+
+        lv_img_set_angle(watch_if_hh_img, ((timeinfo.tm_hour) * 300 + ((timeinfo.tm_min) * 5)) % 3600);
+        lv_img_set_angle(watch_if_mm_img, (timeinfo.tm_min) * 60);
+
+        lv_anim_t a;
+        lv_anim_init(&a);
+        lv_anim_set_var(&a, watch_if_ss_img);
+        lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)lv_img_set_angle);
+        lv_anim_set_values(&a, (timeinfo.tm_sec * 60) % 3600,
+                           (timeinfo.tm_sec + 1) * 60);
+        lv_anim_set_time(&a, 1000);
+        lv_anim_start(&a);
+    },
+    1000, NULL);
+}
+
+lv_obj_t *watch_if_hh_img3;
+lv_obj_t *watch_if_mm_img3;
+lv_obj_t *watch_if_ss_img3;
+
+void analogclock3(lv_obj_t *parent)
+{
+    bool antialias = true;
+    lv_img_header_t header;
+
+    const void *clock_filename = &watch_if_bg2;
+    const void *hour_filename = &watch_if_hour2;
+    const void *min_filename = &watch_if_min2;
+    const void *sec_filename = &watch_if_sec2;
+
+    lv_obj_t *clock_if =  lv_img_create(parent);
+    lv_img_set_src(clock_if, clock_filename);
+    lv_obj_set_size(clock_if, 240, 240);
+    lv_obj_center(clock_if);
+
+
+    watch_if_hh_img3 = lv_img_create(parent);
+    lv_img_decoder_get_info(hour_filename, &header);
+    lv_img_set_src(watch_if_hh_img3, hour_filename);
+    lv_obj_center(watch_if_hh_img3);
+    lv_img_set_pivot(watch_if_hh_img3, header.w / 2, header.h / 2);
+    lv_img_set_antialias(watch_if_hh_img3, antialias);
+
+    lv_img_decoder_get_info(min_filename, &header);
+    watch_if_mm_img3 = lv_img_create(parent);
+    lv_img_set_src(watch_if_mm_img3,  min_filename);
+    lv_obj_center(watch_if_mm_img3);
+    lv_img_set_pivot(watch_if_mm_img3, header.w / 2, header.h / 2);
+    lv_img_set_antialias(watch_if_mm_img3, antialias);
+
+    lv_img_decoder_get_info(sec_filename, &header);
+    watch_if_ss_img3 = lv_img_create(parent);
+    lv_img_set_src(watch_if_ss_img3,  sec_filename);
+    lv_obj_center(watch_if_ss_img3);
+    lv_img_set_pivot(watch_if_ss_img3, header.w / 2, header.h / 2);
+    lv_img_set_antialias(watch_if_ss_img3, antialias);
+
+    lv_timer_create([](lv_timer_t *timer) {
+
+        time_t now;
+        struct tm  timeinfo;
+        time(&now);
+        localtime_r(&now, &timeinfo);
+
+        lv_img_set_angle(watch_if_hh_img3, ((timeinfo.tm_hour) * 300 + ((timeinfo.tm_min) * 5)) % 3600);
+        lv_img_set_angle(watch_if_mm_img3, (timeinfo.tm_min) * 60);
+
+        lv_anim_t a;
+        lv_anim_init(&a);
+        lv_anim_set_var(&a, watch_if_ss_img3);
+        lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)lv_img_set_angle);
+        lv_anim_set_values(&a, (timeinfo.tm_sec * 60) % 3600,
+                           (timeinfo.tm_sec + 1) * 60);
+        lv_anim_set_time(&a, 1000);
+        lv_anim_start(&a);
+    },
+    1000, NULL);
+
+}
+
+void digitalClock(lv_obj_t *parent)
+{
+    const void *clock_filename = &watch_if_5;
+    lv_obj_t *clock_if =  lv_img_create(parent);
+    lv_img_set_src(clock_if, clock_filename);
+    lv_obj_set_size(clock_if, 240, 240);
+    lv_obj_center(clock_if);
+
+    label_datetime = lv_label_create(parent);
+    lv_label_set_text(label_datetime, "00:00");
+    lv_obj_set_style_text_font(label_datetime, &font_firacode_60, LV_PART_MAIN);
+    lv_obj_set_style_text_color(label_datetime, lv_color_white(), LV_PART_MAIN);
+    lv_obj_align(label_datetime, LV_ALIGN_CENTER, 0, 50);
+
+    lv_timer_create([](lv_timer_t *timer) {
+        time_t now;
+        struct tm  timeinfo;
+        time(&now);
+        localtime_r(&now, &timeinfo);
+        static  bool rever = false;
+        lv_label_set_text_fmt(label_datetime, rever ? "%02d:%02d" : "%02d %02d", timeinfo.tm_hour, timeinfo.tm_min);
+        rever = !rever;
+    },
+    1000, NULL);
+}
 static void watch_ifs_create(lv_obj_t *parent)
 {
   static lv_style_t bgStyle;
@@ -168,9 +346,15 @@ static void watch_ifs_create(lv_obj_t *parent)
   lv_obj_set_size(tileview, lv_disp_get_hor_res(NULL), lv_disp_get_ver_res(NULL));
   
   lv_obj_t *t2 = lv_tileview_add_tile(tileview, 0, 0, LV_DIR_HOR);
+  lv_obj_t *t2_1 = lv_tileview_add_tile(tileview, 1, 0, LV_DIR_HOR);
+  lv_obj_t *t2_2 = lv_tileview_add_tile(tileview, 2, 0, LV_DIR_HOR);
+  lv_obj_t *t2_3 = lv_tileview_add_tile(tileview, 3, 0, LV_DIR_HOR);
 
   analogclock(t2);
+  analogclock2(t2_1);
+  analogclock3(t2_2);
 
+  digitalClock(t2_3);
 }
 
 
@@ -298,11 +482,11 @@ void ui_init(void) {
   watch_ifs_create(watch_panel);
   lv_obj_t *menu_panel = lv_tileview_add_tile(main_screen, 0, 1, LV_DIR_TOP);
   lv_obj_set_style_bg_color(menu_panel, lv_color_hex(0xffffff), LV_PART_MAIN);
-  lv_obj_t *app_panel = lv_tileview_add_tile(main_screen, 0, 2, LV_DIR_HOR);
+  lv_obj_t *app_panel = lv_tileview_add_tile(main_screen, 0, 2, LV_DIR_NONE);
   if(app_panel == NULL)
     return;
 
-  // lv_obj_clear_flag(menu_panel, LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_clear_flag(menu_panel, LV_OBJ_FLAG_SCROLLABLE);
 
   /* Initialize the menu view */
   lv_obj_t *panel = lv_obj_create(menu_panel);
@@ -314,6 +498,7 @@ void ui_init(void) {
   lv_obj_add_event_cb(panel, menu_panel_scroll_cb, LV_EVENT_SCROLL, NULL);
 
   /* Add application */
+  //create_app(panel, "Return", &home_img80, &app_return);
   create_app(panel, "Calendar", &calendar_img80, &app_calendar);
   create_app(panel, "Wireless", &img_wifi, &app_wireless);
   create_app(panel, "Music", &img_music, &app_music);
