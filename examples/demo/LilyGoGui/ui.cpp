@@ -182,11 +182,11 @@ void analogclock2(lv_obj_t *parent)
     lv_img_header_t header;
 
     /* Reading image from file */
-    String clock_f = LV_FS_POSIX_LETTER + String(":/") + String("ttgo.jpg");
-    const void *clock_filename = &clock_f;
+    // String clock_f = LV_FS_POSIX_LETTER + String(":/") + String("ttgo.jpg");
+    // const void *clock_filename = &clock_f;
 
     /* reading image from raw C file*/
-    // const void *clock_filename = &watch_if;
+    const void *clock_filename = &watch_if;
     const void *hour_filename = &watch_if_hour;
     const void *min_filename = &watch_if_min;
     const void *sec_filename = &watch_if_sec;
